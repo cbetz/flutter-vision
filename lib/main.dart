@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:firebase_ml_vision/firebase_ml_vision.dart';
 
 class FlutterVisionHome extends StatefulWidget {
   @override
@@ -113,9 +114,29 @@ class _FlutterVisionHomeState extends State<FlutterVisionHome> {
         setState(() {
           imagePath = filePath;
         });
-        if (filePath != null) showInSnackBar('Picture saved to $filePath');
+        if (filePath != null) {
+          showInSnackBar('Picture saved to $filePath');
+
+          detectLabels().then((_) { 
+
+          });
+        } 
       }
     });
+  }
+
+  Future<void> detectLabels() async {
+    final FirebaseVisionImage visionImage = FirebaseVisionImage.fromFilePath(imagePath);
+    final LabelDetector labelDetector = FirebaseVision.instance.labelDetector();
+    final List<Label> labels = await labelDetector.detectInImage(visionImage);
+
+    for (Label label in labels) {
+      final String text = label.label;
+      //final String entityId = label.entityId;
+      //final double confidence = label.confidence;
+
+      _scaffoldKey.currentState.showSnackBar(SnackBar(content: Text(text)));
+    }
   }
 
   Future<String> takePicture() async {

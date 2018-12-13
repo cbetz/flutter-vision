@@ -1,0 +1,42 @@
+{
+  "project_info": {
+    "project_number": "1029786050112",
+    "firebase_url": "https://flutter-vision-app.firebaseio.com",
+    "project_id": "flutter-vision-app",
+    "storage_bucket": "flutter-vision-app.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1029786050112:android:2ba277e467799c3b",
+        "android_client_info": {
+          "package_name": "com.betzsoftware.fluttervision"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1029786050112-bbmb6vpk5p3uorp0i56aq7b6ork66tsn.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAYjE-MOulVZfRmYg8Aet9kSLdf0pW6IWc"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
