@@ -16,9 +16,11 @@ dependencies:
   camera: ^0.2.6 
   cloud_firestore: ^0.8.2+3
   firebase_ml_vision: ^0.2.0+2
+  firebase_storage: ^1.0.4
   flutter:
     sdk: flutter
   path_provider: ^0.4.1
+  uuid: "^1.0.0"
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.

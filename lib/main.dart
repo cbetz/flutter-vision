@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:firebase_ml_vision/firebase_ml_vision.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:uuid/uuid.dart';
 
 class FlutterVisionHome extends StatefulWidget {
   @override
@@ -138,13 +140,32 @@ class _FlutterVisionHomeState extends State<FlutterVisionHome> {
       labelTexts.add(text);
     }
 
-    _addItem(labelTexts);
+    final String uuid = Uuid().v1();
+    final String downloadURL = await _uploadFile(uuid);
+
+    _addItem(downloadURL, labelTexts);
   }
 
-  Future<void> _addItem(List<String> labels) async {
+  Future<void> _addItem(String downloadURL, List<String> labels) async {
     await Firestore.instance.collection('items').add(<String, dynamic> {
+      'downloadURL': downloadURL,
       'labels': labels
     });
+  }
+
+  Future<String> _uploadFile(filename) async {
+    final File file = File(imagePath);
+    final StorageReference ref = FirebaseStorage.instance.ref().child('$filename.jpg');
+    final StorageUploadTask uploadTask = ref.putFile(
+      file,
+      StorageMetadata(
+        contentLanguage: 'en',
+        //customMetadata: <String, String>{'activity': 'test'},
+      ),
+    );
+
+    final downloadURL = await (await uploadTask.onComplete).ref.getDownloadURL();
+    return downloadURL.toString();
   }
 
   Future<String> takePicture() async {
