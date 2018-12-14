@@ -5,6 +5,7 @@ import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:firebase_ml_vision/firebase_ml_vision.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class FlutterVisionHome extends StatefulWidget {
   @override
@@ -115,7 +116,7 @@ class _FlutterVisionHomeState extends State<FlutterVisionHome> {
           imagePath = filePath;
         });
         if (filePath != null) {
-          showInSnackBar('Picture saved to $filePath');
+          //showInSnackBar('Picture saved to $filePath');
 
           detectLabels().then((_) { 
 
@@ -130,13 +131,20 @@ class _FlutterVisionHomeState extends State<FlutterVisionHome> {
     final LabelDetector labelDetector = FirebaseVision.instance.labelDetector();
     final List<Label> labels = await labelDetector.detectInImage(visionImage);
 
+    List<String> labelTexts = new List();
     for (Label label in labels) {
       final String text = label.label;
-      //final String entityId = label.entityId;
-      //final double confidence = label.confidence;
 
-      _scaffoldKey.currentState.showSnackBar(SnackBar(content: Text(text)));
+      labelTexts.add(text);
     }
+
+    _addItem(labelTexts);
+  }
+
+  Future<void> _addItem(List<String> labels) async {
+    await Firestore.instance.collection('items').add(<String, dynamic> {
+      'labels': labels
+    });
   }
 
   Future<String> takePicture() async {
