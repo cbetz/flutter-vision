@@ -9,17 +9,14 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:uuid/uuid.dart';
 
-class FlutterVisionHome extends StatefulWidget {
+class CameraScreen extends StatefulWidget {
   @override
-  _FlutterVisionHomeState createState() {
-    return _FlutterVisionHomeState();
+  _CameraScreenState createState() {
+    return _CameraScreenState();
   }
 }
 
-void logError(String code, String message) =>
-    print('Error: $code\nError Message: $message');
-
-class _FlutterVisionHomeState extends State<FlutterVisionHome> {
+class _CameraScreenState extends State<CameraScreen> {
   CameraController controller;
   String imagePath;
 
@@ -118,10 +115,8 @@ class _FlutterVisionHomeState extends State<FlutterVisionHome> {
           imagePath = filePath;
         });
         if (filePath != null) {
-          //showInSnackBar('Picture saved to $filePath');
-
           detectLabels().then((_) { 
-
+            
           });
         } 
       }
@@ -143,7 +138,12 @@ class _FlutterVisionHomeState extends State<FlutterVisionHome> {
     final String uuid = Uuid().v1();
     final String downloadURL = await _uploadFile(uuid);
 
-    _addItem(downloadURL, labelTexts);
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => ItemsListScreen()),
+    );
+
+    await _addItem(downloadURL, labelTexts);
   }
 
   Future<void> _addItem(String downloadURL, List<String> labels) async {
@@ -160,7 +160,6 @@ class _FlutterVisionHomeState extends State<FlutterVisionHome> {
       file,
       StorageMetadata(
         contentLanguage: 'en',
-        //customMetadata: <String, String>{'activity': 'test'},
       ),
     );
 
@@ -198,16 +197,112 @@ class _FlutterVisionHomeState extends State<FlutterVisionHome> {
   }
 }
 
-class FlutterVisionApp extends StatelessWidget {
+List<CameraDescription> cameras;
+
+class ItemsListScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      home: FlutterVisionHome(),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('My Items'),
+      ),
+      body: ItemsList(firestore: Firestore.instance),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => CameraScreen()),
+            );
+        },
+        child: const Icon(Icons.add),
+      ),
     );
   }
 }
 
-List<CameraDescription> cameras;
+class ItemsList extends StatelessWidget {
+  ItemsList({this.firestore});
+
+  final Firestore firestore;
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<QuerySnapshot>(
+      stream: firestore.collection('items').snapshots(),
+      builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
+        if (!snapshot.hasData) return const Text('Loading...');
+        final int itemsCount = snapshot.data.documents.length;
+        return ListView.builder(
+          itemCount: itemsCount,
+          itemBuilder: (_, int index) {
+            final DocumentSnapshot document = snapshot.data.documents[index];
+            return SafeArea(
+              top: false,
+              bottom: false,
+              child: Container(
+                padding: const EdgeInsets.all(8.0),
+                height: 310.0,
+                child: Card(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(16.0),
+                      topRight: Radius.circular(16.0),
+                      bottomLeft: Radius.circular(16.0),
+                      bottomRight: Radius.circular(16.0),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      // photo and title
+                      SizedBox(
+                        height: 184.0,
+                        child: Stack(
+                          children: <Widget>[
+                            Positioned.fill(
+                              child: Image.network(
+                                document['downloadURL']
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 0.0),
+                          child: DefaultTextStyle(
+                            softWrap: true,
+                            //overflow: TextOverflow.,
+                            style: Theme.of(context).textTheme.subhead,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: <Widget>[
+                                Text(document['labels'].join(', ')),
+                              ]
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+class FlutterVisionApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      home: ItemsListScreen(),
+    );
+  }
+}
 
 Future<void> main() async {
   // Fetch the available cameras before initializing the app.
@@ -218,3 +313,6 @@ Future<void> main() async {
   }
   runApp(FlutterVisionApp());
 }
+
+void logError(String code, String message) =>
+    print('Error: $code\nError Message: $message');
