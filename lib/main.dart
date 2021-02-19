@@ -2,11 +2,12 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:camera/camera.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:firebase_ml_vision/firebase_ml_vision.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
 import 'package:uuid/uuid.dart';
 
 class CameraScreen extends StatefulWidget {
@@ -93,8 +94,7 @@ class _CameraScreenState extends State<CameraScreen> {
         IconButton(
           icon: const Icon(Icons.camera_alt),
           color: Colors.blue,
-          onPressed: controller != null &&
-                  controller.value.isInitialized 
+          onPressed: controller != null && controller.value.isInitialized
               ? onTakePictureButtonPressed
               : null,
         )
@@ -115,22 +115,22 @@ class _CameraScreenState extends State<CameraScreen> {
           imagePath = filePath;
         });
         if (filePath != null) {
-          detectLabels().then((_) { 
-            
-          });
-        } 
+          detectLabels().then((_) {});
+        }
       }
     });
   }
 
   Future<void> detectLabels() async {
-    final FirebaseVisionImage visionImage = FirebaseVisionImage.fromFilePath(imagePath);
-    final LabelDetector labelDetector = FirebaseVision.instance.labelDetector();
-    final List<Label> labels = await labelDetector.detectInImage(visionImage);
+    final FirebaseVisionImage visionImage =
+        FirebaseVisionImage.fromFilePath(imagePath);
+    final ImageLabeler labelDetector = FirebaseVision.instance.imageLabeler();
+    final List<ImageLabel> labels =
+        await labelDetector.processImage(visionImage);
 
     List<String> labelTexts = new List();
-    for (Label label in labels) {
-      final String text = label.label;
+    for (ImageLabel label in labels) {
+      final String text = label.text;
 
       labelTexts.add(text);
     }
@@ -147,23 +147,24 @@ class _CameraScreenState extends State<CameraScreen> {
   }
 
   Future<void> _addItem(String downloadURL, List<String> labels) async {
-    await Firestore.instance.collection('items').add(<String, dynamic> {
-      'downloadURL': downloadURL,
-      'labels': labels
-    });
+    await FirebaseFirestore.instance
+        .collection('items')
+        .add(<String, dynamic>{'downloadURL': downloadURL, 'labels': labels});
   }
 
   Future<String> _uploadFile(filename) async {
     final File file = File(imagePath);
-    final StorageReference ref = FirebaseStorage.instance.ref().child('$filename.jpg');
-    final StorageUploadTask uploadTask = ref.putFile(
+    final firebase_storage.Reference ref =
+        firebase_storage.FirebaseStorage.instance.ref().child('$filename.jpg');
+    final firebase_storage.UploadTask uploadTask = ref.putFile(
       file,
-      StorageMetadata(
+      firebase_storage.SettableMetadata(
         contentLanguage: 'en',
       ),
     );
 
-    final downloadURL = await (await uploadTask.onComplete).ref.getDownloadURL();
+    firebase_storage.TaskSnapshot snapshot = await uploadTask;
+    final downloadURL = snapshot.ref.getDownloadURL();
     return downloadURL.toString();
   }
 
@@ -206,13 +207,13 @@ class ItemsListScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('My Items'),
       ),
-      body: ItemsList(firestore: Firestore.instance),
+      body: ItemsList(firestore: FirebaseFirestore.instance),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => CameraScreen()),
-            );
+            context,
+            MaterialPageRoute(builder: (context) => CameraScreen()),
+          );
         },
         child: const Icon(Icons.add),
       ),
@@ -223,7 +224,7 @@ class ItemsListScreen extends StatelessWidget {
 class ItemsList extends StatelessWidget {
   ItemsList({this.firestore});
 
-  final Firestore firestore;
+  final FirebaseFirestore firestore;
 
   @override
   Widget build(BuildContext context) {
@@ -231,11 +232,11 @@ class ItemsList extends StatelessWidget {
       stream: firestore.collection('items').snapshots(),
       builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
         if (!snapshot.hasData) return const Text('Loading...');
-        final int itemsCount = snapshot.data.documents.length;
+        final int itemsCount = snapshot.data.docs.length;
         return ListView.builder(
           itemCount: itemsCount,
           itemBuilder: (_, int index) {
-            final DocumentSnapshot document = snapshot.data.documents[index];
+            final DocumentSnapshot document = snapshot.data.docs[index];
             return SafeArea(
               top: false,
               bottom: false,
@@ -260,26 +261,24 @@ class ItemsList extends StatelessWidget {
                         child: Stack(
                           children: <Widget>[
                             Positioned.fill(
-                              child: Image.network(
-                                document['downloadURL']
-                              ),
+                              child: Image.network(document['downloadURL']),
                             ),
                           ],
                         ),
                       ),
                       Expanded(
                         child: Padding(
-                          padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 0.0),
+                          padding:
+                              const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 0.0),
                           child: DefaultTextStyle(
                             softWrap: true,
                             //overflow: TextOverflow.,
                             style: Theme.of(context).textTheme.subhead,
                             child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: <Widget>[
-                                Text(document['labels'].join(', ')),
-                              ]
-                            ),
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: <Widget>[
+                                  Text(document['labels'].join(', ')),
+                                ]),
                           ),
                         ),
                       ),
@@ -305,6 +304,8 @@ class FlutterVisionApp extends StatelessWidget {
 }
 
 Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
   // Fetch the available cameras before initializing the app.
   try {
     cameras = await availableCameras();
