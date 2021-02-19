@@ -125,6 +125,7 @@ class _CameraScreenState extends State<CameraScreen> {
     final FirebaseVisionImage visionImage =
         FirebaseVisionImage.fromFilePath(imagePath);
     final ImageLabeler labelDetector = FirebaseVision.instance.imageLabeler();
+
     final List<ImageLabel> labels =
         await labelDetector.processImage(visionImage);
 
@@ -164,8 +165,8 @@ class _CameraScreenState extends State<CameraScreen> {
     );
 
     firebase_storage.TaskSnapshot snapshot = await uploadTask;
-    final downloadURL = snapshot.ref.getDownloadURL();
-    return downloadURL.toString();
+    final downloadURL = await snapshot.ref.getDownloadURL();
+    return downloadURL;
   }
 
   Future<String> takePicture() async {
@@ -176,7 +177,8 @@ class _CameraScreenState extends State<CameraScreen> {
     final Directory extDir = await getApplicationDocumentsDirectory();
     final String dirPath = '${extDir.path}/Pictures/flutter_vision';
     await Directory(dirPath).create(recursive: true);
-    final String filePath = '$dirPath/${timestamp()}.jpg';
+    //final String filePath = '$dirPath/${timestamp()}.jpg';
+    XFile imageFile;
 
     if (controller.value.isTakingPicture) {
       // A capture is already pending, do nothing.
@@ -184,12 +186,13 @@ class _CameraScreenState extends State<CameraScreen> {
     }
 
     try {
-      await controller.takePicture(filePath);
+      imageFile = await controller.takePicture();
     } on CameraException catch (e) {
       _showCameraException(e);
       return null;
     }
-    return filePath;
+
+    return imageFile.path;
   }
 
   void _showCameraException(CameraException e) {

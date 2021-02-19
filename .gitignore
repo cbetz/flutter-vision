@@ -115,3 +115,7 @@ app.*.symbols
 !**/ios/**/default.perspectivev3
 !/packages/flutter_tools/test/data/dart_dependencies_test/**/.packages
 !/dev/ci/**/Gemfile.lock
+
+# exclude firebase project files
+ios/Runner/GoogleService-Info.plist
+android/app/google-services.json
