@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:firebase_ml_vision/firebase_ml_vision.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
@@ -171,13 +170,10 @@ class _CameraScreenState extends State<CameraScreen> {
 
   Future<String> takePicture() async {
     if (!controller.value.isInitialized) {
-      showInSnackBar('Error: select a camera first.');
+      showInSnackBar('Please select a camera first');
       return null;
     }
-    final Directory extDir = await getApplicationDocumentsDirectory();
-    final String dirPath = '${extDir.path}/Pictures/flutter_vision';
-    await Directory(dirPath).create(recursive: true);
-    //final String filePath = '$dirPath/${timestamp()}.jpg';
+
     XFile imageFile;
 
     if (controller.value.isTakingPicture) {
@@ -276,7 +272,7 @@ class ItemsList extends StatelessWidget {
                           child: DefaultTextStyle(
                             softWrap: true,
                             //overflow: TextOverflow.,
-                            style: Theme.of(context).textTheme.subhead,
+                            style: Theme.of(context).textTheme.subtitle1,
                             child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: <Widget>[
