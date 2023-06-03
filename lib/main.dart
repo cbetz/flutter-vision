@@ -4,9 +4,11 @@ import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:firebase_ml_vision/firebase_ml_vision.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
+import 'package:google_mlkit_image_labeling/google_mlkit_image_labeling.dart';
+
 import 'package:uuid/uuid.dart';
 
 class CameraScreen extends StatefulWidget {
@@ -121,19 +123,20 @@ class _CameraScreenState extends State<CameraScreen> {
   }
 
   Future<void> detectLabels() async {
-    final FirebaseVisionImage visionImage =
-        FirebaseVisionImage.fromFilePath(imagePath!);
-    final ImageLabeler labelDetector = FirebaseVision.instance.imageLabeler();
+    final InputImage inputImage = InputImage.fromFilePath(imagePath!);
+    final ImageLabelerOptions options = ImageLabelerOptions(confidenceThreshold: 0.5);
+    final imageLabeler = ImageLabeler(options: options);
 
-    final List<ImageLabel> labels =
-        await labelDetector.processImage(visionImage);
+    final List<ImageLabel> labels = await imageLabeler.processImage(inputImage);
 
     List<String?> labelTexts = <String?>[];
     for (ImageLabel label in labels) {
-      final String? text = label.text;
+      final String? text = label.label;
 
       labelTexts.add(text);
     }
+
+    imageLabeler.close();
 
     final String uuid = Uuid().v1();
     final String downloadURL = await _uploadFile(uuid);
