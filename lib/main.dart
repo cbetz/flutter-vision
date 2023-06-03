@@ -17,8 +17,8 @@ class CameraScreen extends StatefulWidget {
 }
 
 class _CameraScreenState extends State<CameraScreen> {
-  CameraController controller;
-  String imagePath;
+  CameraController? controller;
+  String? imagePath;
 
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
@@ -26,7 +26,7 @@ class _CameraScreenState extends State<CameraScreen> {
   void initState() {
     super.initState();
     controller = CameraController(cameras[0], ResolutionPreset.medium);
-    controller.initialize().then((_) {
+    controller!.initialize().then((_) {
       if (!mounted) {
         return;
       }
@@ -67,7 +67,7 @@ class _CameraScreenState extends State<CameraScreen> {
 
   /// Display the preview from the camera (or a message if the preview is not available).
   Widget _cameraPreviewWidget() {
-    if (controller == null || !controller.value.isInitialized) {
+    if (controller == null || !controller!.value.isInitialized) {
       return const Text(
         'Tap a camera',
         style: TextStyle(
@@ -78,8 +78,8 @@ class _CameraScreenState extends State<CameraScreen> {
       );
     } else {
       return AspectRatio(
-        aspectRatio: controller.value.aspectRatio,
-        child: CameraPreview(controller),
+        aspectRatio: controller!.value.aspectRatio,
+        child: CameraPreview(controller!),
       );
     }
   }
@@ -93,7 +93,7 @@ class _CameraScreenState extends State<CameraScreen> {
         IconButton(
           icon: const Icon(Icons.camera_alt),
           color: Colors.blue,
-          onPressed: controller != null && controller.value.isInitialized
+          onPressed: controller != null && controller!.value.isInitialized
               ? onTakePictureButtonPressed
               : null,
         )
@@ -104,11 +104,11 @@ class _CameraScreenState extends State<CameraScreen> {
   String timestamp() => DateTime.now().millisecondsSinceEpoch.toString();
 
   void showInSnackBar(String message) {
-    _scaffoldKey.currentState.showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 
   void onTakePictureButtonPressed() {
-    takePicture().then((String filePath) {
+    takePicture().then((String? filePath) {
       if (mounted) {
         setState(() {
           imagePath = filePath;
@@ -122,15 +122,15 @@ class _CameraScreenState extends State<CameraScreen> {
 
   Future<void> detectLabels() async {
     final FirebaseVisionImage visionImage =
-        FirebaseVisionImage.fromFilePath(imagePath);
+        FirebaseVisionImage.fromFilePath(imagePath!);
     final ImageLabeler labelDetector = FirebaseVision.instance.imageLabeler();
 
     final List<ImageLabel> labels =
         await labelDetector.processImage(visionImage);
 
-    List<String> labelTexts = new List();
+    List<String?> labelTexts = <String?>[];
     for (ImageLabel label in labels) {
-      final String text = label.text;
+      final String? text = label.text;
 
       labelTexts.add(text);
     }
@@ -146,14 +146,14 @@ class _CameraScreenState extends State<CameraScreen> {
     await _addItem(downloadURL, labelTexts);
   }
 
-  Future<void> _addItem(String downloadURL, List<String> labels) async {
+  Future<void> _addItem(String downloadURL, List<String?> labels) async {
     await FirebaseFirestore.instance
         .collection('items')
         .add(<String, dynamic>{'downloadURL': downloadURL, 'labels': labels});
   }
 
   Future<String> _uploadFile(filename) async {
-    final File file = File(imagePath);
+    final File file = File(imagePath!);
     final firebase_storage.Reference ref =
         firebase_storage.FirebaseStorage.instance.ref().child('$filename.jpg');
     final firebase_storage.UploadTask uploadTask = ref.putFile(
@@ -168,21 +168,21 @@ class _CameraScreenState extends State<CameraScreen> {
     return downloadURL;
   }
 
-  Future<String> takePicture() async {
-    if (!controller.value.isInitialized) {
+  Future<String?> takePicture() async {
+    if (!controller!.value.isInitialized) {
       showInSnackBar('Please select a camera first');
       return null;
     }
 
     XFile imageFile;
 
-    if (controller.value.isTakingPicture) {
+    if (controller!.value.isTakingPicture) {
       // A capture is already pending, do nothing.
       return null;
     }
 
     try {
-      imageFile = await controller.takePicture();
+      imageFile = await controller!.takePicture();
     } on CameraException catch (e) {
       _showCameraException(e);
       return null;
@@ -197,7 +197,7 @@ class _CameraScreenState extends State<CameraScreen> {
   }
 }
 
-List<CameraDescription> cameras;
+late List<CameraDescription> cameras;
 
 class ItemsListScreen extends StatelessWidget {
   @override
@@ -223,19 +223,19 @@ class ItemsListScreen extends StatelessWidget {
 class ItemsList extends StatelessWidget {
   ItemsList({this.firestore});
 
-  final FirebaseFirestore firestore;
+  final FirebaseFirestore? firestore;
 
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<QuerySnapshot>(
-      stream: firestore.collection('items').snapshots(),
+      stream: firestore!.collection('items').snapshots(),
       builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
         if (!snapshot.hasData) return const Text('Loading...');
-        final int itemsCount = snapshot.data.docs.length;
+        final int itemsCount = snapshot.data!.docs.length;
         return ListView.builder(
           itemCount: itemsCount,
           itemBuilder: (_, int index) {
-            final DocumentSnapshot document = snapshot.data.docs[index];
+            final DocumentSnapshot document = snapshot.data!.docs[index];
             return SafeArea(
               top: false,
               bottom: false,
@@ -272,7 +272,7 @@ class ItemsList extends StatelessWidget {
                           child: DefaultTextStyle(
                             softWrap: true,
                             //overflow: TextOverflow.,
-                            style: Theme.of(context).textTheme.subtitle1,
+                            style: Theme.of(context).textTheme.subtitle1!,
                             child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: <Widget>[
@@ -314,5 +314,5 @@ Future<void> main() async {
   runApp(FlutterVisionApp());
 }
 
-void logError(String code, String message) =>
+void logError(String code, String? message) =>
     print('Error: $code\nError Message: $message');
