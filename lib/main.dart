@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:camera/camera.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 import 'package:flutter/material.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -106,7 +107,8 @@ class _CameraScreenState extends State<CameraScreen> {
   String timestamp() => DateTime.now().millisecondsSinceEpoch.toString();
 
   void showInSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   void onTakePictureButtonPressed() {
@@ -124,7 +126,8 @@ class _CameraScreenState extends State<CameraScreen> {
 
   Future<void> detectLabels() async {
     final InputImage inputImage = InputImage.fromFilePath(imagePath!);
-    final ImageLabelerOptions options = ImageLabelerOptions(confidenceThreshold: 0.5);
+    final ImageLabelerOptions options =
+        ImageLabelerOptions(confidenceThreshold: 0.5);
     final imageLabeler = ImageLabeler(options: options);
 
     final List<ImageLabel> labels = await imageLabeler.processImage(inputImage);
@@ -307,7 +310,9 @@ class FlutterVisionApp extends StatelessWidget {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   // Fetch the available cameras before initializing the app.
   try {
     cameras = await availableCameras();
